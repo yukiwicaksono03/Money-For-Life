@@ -145,3 +145,74 @@ export async function upsertBudget(
   revalidatePath("/dashboard");
   return { error: null };
 }
+
+const CATEGORY_COLORS = [
+  "#F59E0B",
+  "#3B82F6",
+  "#EC4899",
+  "#8B5CF6",
+  "#EF4444",
+  "#14B8A6",
+  "#6B7280",
+  "#10B981",
+  "#0EA5E9",
+];
+
+export async function saveBudgetEntry(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sesi berakhir, silakan masuk lagi." };
+
+  const month = String(formData.get("month") ?? "");
+  const amount = Number(formData.get("amount"));
+  let categoryId = String(formData.get("category_id") ?? "");
+  const newCategoryName = String(formData.get("new_category_name") ?? "").trim();
+
+  if (!month) return { error: "Bulan tidak valid." };
+  if (!amount || amount < 0) return { error: "Nominal tidak valid." };
+
+  if (categoryId === "__new__") {
+    if (!newCategoryName) {
+      return { error: "Nama kategori baru wajib diisi." };
+    }
+    const color =
+      CATEGORY_COLORS[Math.floor(Math.random() * CATEGORY_COLORS.length)];
+    const { data: newCategory, error: categoryError } = await supabase
+      .from("categories")
+      .insert({
+        user_id: user.id,
+        name: newCategoryName,
+        type: "expense",
+        color,
+        icon: "circle",
+      })
+      .select()
+      .single();
+
+    if (categoryError) return { error: categoryError.message };
+    categoryId = newCategory.id;
+  }
+
+  if (!categoryId) return { error: "Pilih kategori terlebih dahulu." };
+
+  const { error } = await supabase.from("budgets").upsert(
+    {
+      user_id: user.id,
+      category_id: categoryId,
+      amount,
+      month,
+    },
+    { onConflict: "user_id,category_id,month" }
+  );
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/budget");
+  revalidatePath("/dashboard");
+  return { error: null };
+}

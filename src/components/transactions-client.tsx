@@ -33,7 +33,7 @@ export function TransactionsClient({
 
   return (
     <>
-      <div className="flex flex-col gap-2 px-5">
+      <div className="flex flex-col gap-2 px-5 pb-24">
         {transactions.length === 0 ? (
           <div className="mt-6 rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted">
             Belum ada transaksi di bulan ini.
@@ -49,7 +49,8 @@ export function TransactionsClient({
         type="button"
         onClick={openAdd}
         aria-label="Tambah transaksi"
-        className="fixed bottom-24 right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 transition-transform active:scale-95 sm:right-[max(1rem,calc(50%-16rem+1rem))]"
+        className="fixed right-4 z-[25] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 transition-transform active:scale-95 sm:right-[max(1rem,calc(50%-16rem+1rem))]"
+        style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))" }}
       >
         <Plus size={24} />
       </button>

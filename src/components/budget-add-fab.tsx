@@ -2,10 +2,16 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { TransactionSheet } from "@/components/transaction-sheet";
+import { BudgetSheet } from "@/components/budget-sheet";
 import type { Category } from "@/lib/types/database";
 
-export function QuickAddFab({ categories }: { categories: Category[] }) {
+export function BudgetAddFab({
+  categories,
+  month,
+}: {
+  categories: Category[];
+  month: string;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -13,16 +19,16 @@ export function QuickAddFab({ categories }: { categories: Category[] }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Tambah transaksi"
+        aria-label="Tambah anggaran"
         className="fixed right-4 z-[25] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 transition-transform active:scale-95 sm:right-[max(1rem,calc(50%-16rem+1rem))]"
         style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))" }}
       >
         <Plus size={24} />
       </button>
       {open && (
-        <TransactionSheet
+        <BudgetSheet
           categories={categories}
-          editing={null}
+          month={month}
           onClose={() => setOpen(false)}
         />
       )}
