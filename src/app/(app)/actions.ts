@@ -146,6 +146,73 @@ export async function upsertBudget(
   return { error: null };
 }
 
+export async function updateCategoryBudget(
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sesi berakhir, silakan masuk lagi." };
+
+  const categoryId = String(formData.get("category_id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const amount = Number(formData.get("amount"));
+  const month = String(formData.get("month") ?? "");
+
+  if (!categoryId) return { error: "Kategori tidak ditemukan." };
+  if (!name) return { error: "Nama kategori wajib diisi." };
+  if (!month) return { error: "Bulan tidak valid." };
+  if (Number.isNaN(amount) || amount < 0) return { error: "Nominal tidak valid." };
+
+  const { error: categoryError } = await supabase
+    .from("categories")
+    .update({ name })
+    .eq("id", categoryId)
+    .eq("user_id", user.id);
+
+  if (categoryError) return { error: categoryError.message };
+
+  const { error: budgetError } = await supabase.from("budgets").upsert(
+    {
+      user_id: user.id,
+      category_id: categoryId,
+      amount,
+      month,
+    },
+    { onConflict: "user_id,category_id,month" }
+  );
+
+  if (budgetError) return { error: budgetError.message };
+
+  revalidatePath("/budget");
+  revalidatePath("/dashboard");
+  revalidatePath("/transactions");
+  return { error: null };
+}
+
+export async function deleteCategory(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sesi berakhir, silakan masuk lagi." };
+
+  const { error } = await supabase
+    .from("categories")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/budget");
+  revalidatePath("/dashboard");
+  revalidatePath("/transactions");
+  return { error: null };
+}
+
 const CATEGORY_COLORS = [
   "#F59E0B",
   "#3B82F6",

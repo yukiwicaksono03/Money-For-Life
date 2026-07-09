@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
-import { Check } from "lucide-react";
+import { useActionState, useState } from "react";
+import { Check, Pencil } from "lucide-react";
 import { CategoryIcon } from "@/components/category-icon";
+import { CategoryEditSheet } from "@/components/category-edit-sheet";
 import { formatCurrency } from "@/lib/format";
 import { upsertBudget, type ActionResult } from "@/app/(app)/actions";
 import type { Category } from "@/lib/types/database";
@@ -24,6 +25,7 @@ export function BudgetRow({
     upsertBudget,
     initialState
   );
+  const [editOpen, setEditOpen] = useState(false);
 
   const hasBudget = amount > 0;
   const percent = hasBudget ? Math.min(100, Math.round((spent / amount) * 100)) : 0;
@@ -42,6 +44,14 @@ export function BudgetRow({
             {hasBudget && ` dari ${formatCurrency(amount)}`}
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => setEditOpen(true)}
+          aria-label={`Edit kategori ${category.name}`}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:text-foreground"
+        >
+          <Pencil size={15} />
+        </button>
       </div>
 
       {hasBudget && (
@@ -79,6 +89,15 @@ export function BudgetRow({
       </form>
       {state.error && (
         <p className="mt-1.5 text-xs text-danger">{state.error}</p>
+      )}
+
+      {editOpen && (
+        <CategoryEditSheet
+          category={category}
+          amount={amount}
+          month={month}
+          onClose={() => setEditOpen(false)}
+        />
       )}
     </div>
   );
