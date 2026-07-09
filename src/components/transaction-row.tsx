@@ -11,10 +11,12 @@ export function TransactionRow({
   transaction,
   onEdit,
   readOnly = false,
+  hideCategory = false,
 }: {
   transaction: Transaction;
   onEdit?: (t: Transaction) => void;
   readOnly?: boolean;
+  hideCategory?: boolean;
 }) {
   const [pending, setPending] = useState(false);
   const category = transaction.category;
@@ -34,10 +36,14 @@ export function TransactionRow({
       />
       <div className="flex-1 min-w-0">
         <p className="truncate text-sm font-medium text-foreground">
-          {category?.name ?? "Tanpa kategori"}
+          {hideCategory
+            ? transaction.description || "Tanpa catatan"
+            : category?.name ?? "Tanpa kategori"}
         </p>
         <p className="truncate text-xs text-muted">
-          {transaction.description || formatDate(transaction.transaction_date)}
+          {hideCategory
+            ? formatDate(transaction.transaction_date)
+            : transaction.description || formatDate(transaction.transaction_date)}
         </p>
       </div>
       <span

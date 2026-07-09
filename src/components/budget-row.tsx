@@ -137,7 +137,7 @@ export function BudgetRow({
       {detailsOpen && transactions.length > 0 && (
         <div className="mt-2 flex flex-col gap-2 border-t border-border pt-3">
           {transactions.map((t) => (
-            <TransactionRow key={t.id} transaction={t} readOnly />
+            <TransactionRow key={t.id} transaction={t} readOnly hideCategory />
           ))}
         </div>
       )}
