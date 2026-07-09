@@ -4,6 +4,7 @@ import { Header } from "@/components/header";
 import { MonthSwitcher } from "@/components/month-switcher";
 import { BudgetRow } from "@/components/budget-row";
 import { BudgetAddFab } from "@/components/budget-add-fab";
+import type { Transaction } from "@/lib/types/database";
 
 export default async function BudgetPage({
   searchParams,
@@ -22,16 +23,21 @@ export default async function BudgetPage({
   const expenseCategories = categories.filter((c) => c.type === "expense");
 
   const spentByCategory = new Map<string, number>();
+  const transactionsByCategory = new Map<string, Transaction[]>();
   for (const t of summary.transactions) {
     if (t.type !== "expense" || !t.category_id) continue;
     spentByCategory.set(
       t.category_id,
       (spentByCategory.get(t.category_id) ?? 0) + Number(t.amount)
     );
+    const list = transactionsByCategory.get(t.category_id) ?? [];
+    list.push(t);
+    transactionsByCategory.set(t.category_id, list);
   }
 
   const budgetByCategory = new Map(budgets.map((b) => [b.category_id, Number(b.amount)]));
   const totalBudget = budgets.reduce((sum, b) => sum + Number(b.amount), 0);
+  const totalRemaining = totalBudget - summary.expense;
 
   return (
     <>
@@ -58,6 +64,19 @@ export default async function BudgetPage({
               {formatCurrency(summary.expense)}
             </span>
           </div>
+          {totalBudget > 0 && (
+            <div className="mt-1.5 flex items-center justify-between border-t border-border pt-1.5 text-sm">
+              <span className="text-muted">Sisa anggaran</span>
+              <span
+                className={`font-semibold ${
+                  totalRemaining < 0 ? "text-danger" : "text-primary"
+                }`}
+              >
+                {totalRemaining < 0 ? "-" : ""}
+                {formatCurrency(Math.abs(totalRemaining))}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-3">
@@ -73,6 +92,7 @@ export default async function BudgetPage({
                 category={c}
                 amount={budgetByCategory.get(c.id) ?? 0}
                 spent={spentByCategory.get(c.id) ?? 0}
+                transactions={transactionsByCategory.get(c.id) ?? []}
                 month={month}
               />
             ))
