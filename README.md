@@ -10,6 +10,7 @@ Aplikasi pencatatan transaksi dan perencanaan anggaran (budget) pribadi. Dibangu
 - Filter transaksi per bulan
 - Perencanaan anggaran (budget) bulanan per kategori pengeluaran, lengkap dengan progress bar
 - Dashboard ringkasan saldo + grafik tren 6 bulan terakhir
+- Scan struk belanja pakai kamera (untuk transaksi pengeluaran) — foto struk otomatis dibaca dan mengisi nominal, tanggal, catatan, dan kategori (via OpenAI Vision)
 - Row Level Security (RLS) di Supabase — setiap user hanya bisa melihat datanya sendiri
 
 ## Tech Stack
@@ -19,6 +20,7 @@ Aplikasi pencatatan transaksi dan perencanaan anggaran (budget) pribadi. Dibangu
 - [Tailwind CSS v4](https://tailwindcss.com)
 - [Recharts](https://recharts.org) untuk grafik
 - [Lucide](https://lucide.dev) untuk ikon
+- [OpenAI API](https://platform.openai.com) (model `gpt-4o-mini`, vision) untuk scan struk
 
 ## Setup Lokal
 
@@ -47,7 +49,10 @@ cp .env.example .env.local
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_xxxxx
+OPENAI_API_KEY=sk-xxxxx
 ```
+
+`OPENAI_API_KEY` dipakai untuk fitur scan struk kamera (opsional — kalau tidak diisi, fitur scan akan menampilkan pesan error tapi input transaksi manual tetap berfungsi normal). Dapatkan key-nya di [platform.openai.com/api-keys](https://platform.openai.com/api-keys). Key ini hanya dipakai di server (Server Action), tidak pernah dikirim ke browser.
 
 > File `.env.local` sudah di-ignore oleh git, jadi credential tidak akan ter-commit.
 
@@ -66,11 +71,14 @@ Buka [http://localhost:3000](http://localhost:3000).
 3. Saat konfigurasi project, tambahkan Environment Variables berikut (sama seperti `.env.local`):
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `OPENAI_API_KEY` (untuk fitur scan struk)
 4. Klik **Deploy**. Setelah selesai, aplikasi bisa diakses lewat URL `*.vercel.app` yang diberikan Vercel (bisa diakses secara global).
 5. (Opsional) Tambahkan custom domain di **Project Settings → Domains**.
 6. Di Supabase, tambahkan URL deployment Vercel kamu ke **Authentication → URL Configuration → Redirect URLs** (contoh: `https://money-for-life.vercel.app/auth/callback`) supaya konfirmasi email berfungsi di production.
 
 Setiap kali ada `git push` ke branch `main`, Vercel akan otomatis build & deploy ulang (CI/CD bawaan Vercel, tidak perlu setup tambahan).
+
+> **Catatan biaya:** setiap scan struk memanggil OpenAI API dan dikenakan biaya sesuai [pricing](https://openai.com/api/pricing) model `gpt-4o-mini`. Karena aplikasi ini single-user, tidak ada rate limit tambahan di sisi app — disarankan set usage limit di [platform.openai.com/settings/organization/limits](https://platform.openai.com/settings/organization/limits) untuk jaga-jaga.
 
 ## Struktur Folder
 

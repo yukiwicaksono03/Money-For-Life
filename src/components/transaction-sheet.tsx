@@ -4,6 +4,7 @@ import { useActionState, useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import clsx from "clsx";
 import { addTransaction, updateTransaction, type ActionResult } from "@/app/(app)/actions";
+import { ReceiptScanButton, type ScanResultData } from "@/components/receipt-scan-button";
 import type { Category, Transaction } from "@/lib/types/database";
 
 const initialState: ActionResult = { error: null };
@@ -29,6 +30,15 @@ export function TransactionSheet({
   const [type, setType] = useState<"income" | "expense">(
     editing?.type ?? "expense"
   );
+  const [amount, setAmount] = useState(
+    editing?.amount ? String(editing.amount) : ""
+  );
+  const [description, setDescription] = useState(editing?.description ?? "");
+  const [transactionDate, setTransactionDate] = useState(
+    editing?.transaction_date ?? todayValue()
+  );
+  const [categoryId, setCategoryId] = useState(editing?.category_id ?? "");
+  const [scanNotice, setScanNotice] = useState(false);
 
   useEffect(() => {
     if (!pending && state.error === null && state !== initialState) {
@@ -41,6 +51,14 @@ export function TransactionSheet({
     () => categories.filter((c) => c.type === type),
     [categories, type]
   );
+
+  function handleScanned(data: ScanResultData) {
+    if (data.amount) setAmount(String(data.amount));
+    if (data.description) setDescription(data.description);
+    if (data.transactionDate) setTransactionDate(data.transactionDate);
+    if (data.categoryId) setCategoryId(data.categoryId);
+    setScanNotice(true);
+  }
 
   return (
     <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/40 sm:items-center">
@@ -83,6 +101,17 @@ export function TransactionSheet({
           </div>
           <input type="hidden" name="type" value={type} />
 
+          {type === "expense" && !isEditing && (
+            <>
+              <ReceiptScanButton onScanned={handleScanned} />
+              {scanNotice && (
+                <p className="-mt-2 text-xs text-primary">
+                  Data terisi dari struk. Periksa dulu sebelum disimpan ya.
+                </p>
+              )}
+            </>
+          )}
+
           <div className="flex flex-col gap-1.5">
             <label htmlFor="amount" className="text-sm font-medium text-foreground">
               Nominal (Rp)
@@ -94,7 +123,8 @@ export function TransactionSheet({
               min={1}
               step={1}
               required
-              defaultValue={editing?.amount ?? ""}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
               placeholder="0"
               className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
             />
@@ -107,7 +137,8 @@ export function TransactionSheet({
             <select
               id="category_id"
               name="category_id"
-              defaultValue={editing?.category_id ?? ""}
+              value={categoryId ?? ""}
+              onChange={(e) => setCategoryId(e.target.value)}
               className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
             >
               <option value="">Tanpa kategori</option>
@@ -128,7 +159,8 @@ export function TransactionSheet({
               name="transaction_date"
               type="date"
               required
-              defaultValue={editing?.transaction_date ?? todayValue()}
+              value={transactionDate}
+              onChange={(e) => setTransactionDate(e.target.value)}
               className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
             />
           </div>
@@ -141,7 +173,8 @@ export function TransactionSheet({
               id="description"
               name="description"
               type="text"
-              defaultValue={editing?.description ?? ""}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               placeholder="Mis. Makan siang tim"
               className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
             />
