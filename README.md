@@ -74,9 +74,20 @@ Buka [http://localhost:3000](http://localhost:3000).
    - `OPENAI_API_KEY` (untuk fitur scan struk)
 4. Klik **Deploy**. Setelah selesai, aplikasi bisa diakses lewat URL `*.vercel.app` yang diberikan Vercel (bisa diakses secara global).
 5. (Opsional) Tambahkan custom domain di **Project Settings → Domains**.
-6. Di Supabase, tambahkan URL deployment Vercel kamu ke **Authentication → URL Configuration → Redirect URLs** (contoh: `https://money-for-life.vercel.app/auth/callback`) supaya konfirmasi email berfungsi di production.
+6. Di Supabase (**Authentication → URL Configuration**), set:
+   - **Site URL**: `https://money-for-life.vercel.app` (ganti dengan domain Vercel kamu)
+   - **Redirect URLs**: tambahkan `https://money-for-life.vercel.app/auth/callback` (dan `http://localhost:3000/auth/callback` kalau masih dev lokal juga)
+
+   Tanpa ini, link konfirmasi di email verifikasi akan mengarah ke URL yang salah/tidak bisa diakses ("This page couldn't load" saat diklik).
 
 Setiap kali ada `git push` ke branch `main`, Vercel akan otomatis build & deploy ulang (CI/CD bawaan Vercel, tidak perlu setup tambahan).
+
+### Email verifikasi tidak terkirim?
+
+Supabase menyediakan email service bawaan (tanpa setup SMTP), tapi **hanya untuk testing** — sangat dibatasi (sekitar 2 email/jam) dan sering telat atau tidak sampai sama sekali ke Gmail. Untuk aplikasi single-user seperti ini, ada dua opsi:
+
+- **Opsi cepat (disarankan):** matikan verifikasi email. Di Supabase → **Authentication → Providers → Email**, matikan toggle **"Confirm email"**. Setelah ini, akun baru langsung bisa dipakai tanpa perlu klik link di email.
+- **Opsi proper:** pasang custom SMTP di **Authentication → Providers → Email → SMTP Settings**, misalnya pakai [Resend](https://resend.com) (ada free tier) supaya email verifikasi terkirim andal.
 
 > **Catatan biaya:** setiap scan struk memanggil OpenAI API dan dikenakan biaya sesuai [pricing](https://openai.com/api/pricing) model `gpt-4o-mini`. Karena aplikasi ini single-user, tidak ada rate limit tambahan di sisi app — disarankan set usage limit di [platform.openai.com/settings/organization/limits](https://platform.openai.com/settings/organization/limits) untuk jaga-jaga.
 
