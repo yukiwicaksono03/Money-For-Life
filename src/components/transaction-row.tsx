@@ -1,31 +1,28 @@
 "use client";
 
-import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { CategoryIcon } from "@/components/category-icon";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { deleteTransaction } from "@/app/(app)/actions";
 import type { Transaction } from "@/lib/types/database";
 
 export function TransactionRow({
   transaction,
   onEdit,
+  onDelete,
   readOnly = false,
   hideCategory = false,
 }: {
   transaction: Transaction;
   onEdit?: (t: Transaction) => void;
+  onDelete?: (id: string) => void;
   readOnly?: boolean;
   hideCategory?: boolean;
 }) {
-  const [pending, setPending] = useState(false);
   const category = transaction.category;
 
-  async function handleDelete() {
+  function handleDelete() {
     if (!confirm("Hapus transaksi ini?")) return;
-    setPending(true);
-    await deleteTransaction(transaction.id);
-    setPending(false);
+    onDelete?.(transaction.id);
   }
 
   const content = (
@@ -70,13 +67,12 @@ export function TransactionRow({
           {content}
         </button>
       )}
-      {!readOnly && (
+      {!readOnly && onDelete && (
         <button
           type="button"
           onClick={handleDelete}
-          disabled={pending}
           aria-label="Hapus"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:text-danger disabled:opacity-50"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:text-danger"
         >
           <Trash2 size={15} />
         </button>

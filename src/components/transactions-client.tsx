@@ -1,10 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { TransactionRow } from "@/components/transaction-row";
 import { TransactionSheet } from "@/components/transaction-sheet";
+import {
+  addTransaction,
+  updateTransaction,
+  deleteTransaction,
+  type ActionResult,
+} from "@/app/(app)/actions";
 import type { Category, Transaction } from "@/lib/types/database";
+
+type OptimisticAction =
+  | { type: "add" | "update"; transaction: Transaction }
+  | { type: "remove"; id: string };
+
+function sortByDateDesc(a: Transaction, b: Transaction) {
+  if (a.transaction_date !== b.transaction_date) {
+    return a.transaction_date < b.transaction_date ? 1 : -1;
+  }
+  return a.created_at < b.created_at ? 1 : -1;
+}
 
 export function TransactionsClient({
   transactions,
@@ -15,6 +32,23 @@ export function TransactionsClient({
 }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+
+  const [optimisticTransactions, applyOptimistic] = useOptimistic(
+    transactions,
+    (state, action: OptimisticAction) => {
+      if (action.type === "remove") {
+        return state.filter((t) => t.id !== action.id);
+      }
+      if (action.type === "add") {
+        return [...state, action.transaction].sort(sortByDateDesc);
+      }
+      return state
+        .map((t) => (t.id === action.transaction.id ? action.transaction : t))
+        .sort(sortByDateDesc);
+    }
+  );
 
   function openAdd() {
     setEditing(null);
@@ -31,16 +65,50 @@ export function TransactionsClient({
     setEditing(null);
   }
 
+  function handleSubmit(
+    draft: Transaction,
+    formData: FormData,
+    isEditing: boolean
+  ) {
+    close();
+    setMutationError(null);
+    startTransition(async () => {
+      applyOptimistic({ type: isEditing ? "update" : "add", transaction: draft });
+      const action = isEditing ? updateTransaction : addTransaction;
+      const result: ActionResult = await action({ error: null }, formData);
+      if (result.error) setMutationError(result.error);
+    });
+  }
+
+  function handleDelete(id: string) {
+    setMutationError(null);
+    startTransition(async () => {
+      applyOptimistic({ type: "remove", id });
+      const result = await deleteTransaction(id);
+      if (result.error) setMutationError(result.error);
+    });
+  }
+
   return (
     <>
+      {mutationError && (
+        <div className="mx-5 mb-2 rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger">
+          {mutationError}
+        </div>
+      )}
       <div className="flex flex-col gap-2 px-5 pb-24">
-        {transactions.length === 0 ? (
+        {optimisticTransactions.length === 0 ? (
           <div className="mt-6 rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted">
             Belum ada transaksi di bulan ini.
           </div>
         ) : (
-          transactions.map((t) => (
-            <TransactionRow key={t.id} transaction={t} onEdit={openEdit} />
+          optimisticTransactions.map((t) => (
+            <TransactionRow
+              key={t.id}
+              transaction={t}
+              onEdit={openEdit}
+              onDelete={handleDelete}
+            />
           ))
         )}
       </div>
@@ -60,6 +128,7 @@ export function TransactionsClient({
           categories={categories}
           editing={editing}
           onClose={close}
+          onSubmit={handleSubmit}
         />
       )}
     </>
